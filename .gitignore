@@ -1,0 +1,15 @@
+# data files
+*.parquet
+*.csv
+*.xlsx
+*.bat
+
+# env
+.env
+.env.*
+.venv/
+
+# cache
+__pycache__/
+.ipynb_checkpoints/
+*.log
