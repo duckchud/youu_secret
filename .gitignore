@@ -13,3 +13,7 @@
 __pycache__/
 .ipynb_checkpoints/
 *.log
+
+/stock
+run_daily.py
+stock_test.ipynb
