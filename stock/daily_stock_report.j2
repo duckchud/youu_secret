@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=720, initial-scale=1.0">
+  <style>
+    @media screen and (max-width: 720px) {
+      .biz-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap:12px !important;
+      }
+      .biz-card {
+        min-width:0 !important;
+        overflow-wrap:anywhere !important;
+      }
+    }
+  </style>
+</head>
+
+<body style="
+  font-family:'Malgun Gothic';
+  font-size:11px;
+  max-width:720px;
+  margin:0 auto;
+  padding:32px 0;
+">
+
+<div style="font-size:26px; font-weight:bold; color:#ed6c00;">{{ week_str }} 재고 데이터 현황 리포트</div>
+
+<p style="font-size:13px; color:#666;">
+기준일: {{ snapshot_date }} (전년 동일 기준: {{ last_year_date }})
+</p>
+
+<p style="font-size:11px; color:#666;">
+※ CSC는 CSC 반품 및 클레임 기준으로 집계되었습니다.
+</p>
+
+<p style="font-size:11px; color:#666;">
+※ Biz의 ETC는 FW, AP, EQ를 제외한 기타 상품군을 의미합니다.
+</p>
+
+
+<!-- KPI 현황 -->
+<div style="margin-bottom:24px;">
+  <div style="
+    display:flex;
+    gap:24px;
+    margin:20px 0;
+    flex-wrap:wrap;
+  ">
+
+    <!-- 총 재고금액 -->
+    <div style="flex:1 1 220px; display:flex; gap:12px;">
+      <div style="width:4px; background:#ed6c00;"></div>
+      <div>
+        <div style="font-size:11px; font-weight:bold; color:#ed6c00; margin-bottom:6px;">
+          총 재고금액
+        </div>
+
+        <div style="font-size:26px; font-weight:800;">
+          {{ amt_current }} 억원
+        </div>
+        <!-- 전년 대비 + CSC (같은 줄) -->
+
+        <div style="
+          display:flex;
+          align-items:center;
+          gap:10px;
+          margin-top:4px;
+          font-size:10px;
+          white-space:normal;
+        ">
+          <span style="
+            color: {{ '#d32f2f' if amt_diff_rate is not none and amt_diff_rate > 0 else '#1976d2' }};
+            font-weight:600;
+          ">
+            전년 대비 {{ '+' if amt_diff_rate > 0 else '' }}{{ amt_diff_rate }}%
+          </span>
+
+          <span style="color:#bbb;">·</span>
+
+          <span style="
+            color:#777;
+            font-weight:500;
+          ">
+            CSC {{ csc_amt_current }} 억원
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 총 재고수량 -->
+    <div style="flex:1 1 220px; display:flex; gap:12px;">
+      <div style="width:4px; background:#ed6c00;"></div>
+      <div>
+        <div style="font-size:11px; font-weight:bold; color:#ed6c00; margin-bottom:6px;">
+          총 재고수량
+        </div>
+
+        <div style="font-size:26px; font-weight:800;">
+          {{ qty_current }} 만개
+        </div>
+
+
+        <!-- 전년 대비 + CSC -->
+        <div style="
+          display:flex;
+          align-items:center;
+          gap:10px;
+          margin-top:4px;
+          font-size:10px;
+          white-space:normal;
+        ">
+          <span style="
+            color: {{ '#d32f2f' if amt_diff_rate is not none and amt_diff_rate > 0 else '#1976d2' }};
+            font-weight:600;
+          ">
+            전년 대비 {{ '+' if qty_diff_rate > 0 else '' }}{{ qty_diff_rate }}%
+          </span>
+
+          <span style="color:#bbb;">·</span>
+
+          <!-- ✅ CSC 수량: 0만개면 '개' 단위로 fallback -->
+          <span style="
+            color:#777;
+            font-weight:500;
+          ">
+            CSC
+            {% if csc_qty_current > 0 %}
+              {{ csc_qty_current }} 만개
+            {% else %}
+              {{ "{:,}".format(csc_qty_raw) }} 개
+            {% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 총 SKU -->
+    <div style="flex:1 1 220px; display:flex; gap:12px;">
+      <div style="width:4px; background:#ed6c00;"></div>
+      <div>
+        <div style="font-size:11px; font-weight:bold; color:#ed6c00; margin-bottom:6px;">
+          총 SKU 수
+        </div>
+
+        <div style="font-size:26px; font-weight:800;">
+          {{ sku_current }} 개
+        </div>
+
+        <!-- 전년 대비 + CSC -->
+        <div style="
+          display:flex;
+          align-items:center;
+          gap:10px;
+          margin-top:4px;
+          font-size:10px;
+          white-space:normal;
+        ">
+          <span style="
+            color: {{ '#d32f2f' if sku_diff is not none and sku_diff > 0 else '#1976d2' }};
+            font-weight:600;
+          ">
+            전년 대비 {{ '+' if sku_diff > 0 else '' }}{{ sku_diff }}개
+          </span>
+
+          <span style="color:#bbb;">·</span>
+
+          <span style="
+            color:#777;
+            font-weight:500;
+          ">
+            CSC {{ csc_sku_current }}개
+          </span>
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+</div>
+
+<!-- Biz별 재고 현황 -->
+<div style="margin-bottom:28px;">
+  <div style="
+    font-size:18px;
+    font-weight:800;
+    color:#ed6c00;
+    margin-bottom:16px;
+  ">
+    Biz별 재고 현황
+  </div>
+
+  <!-- Biz 카드 컨테이너 -->
+  <div class="biz-grid" style="
+    display:grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap:20px;
+  ">
+
+    {% for row in biz_summary %}
+
+    <!-- Biz 카드 -->
+    <div class="biz-card" style="
+      border:1px solid #eee;
+      border-radius:10px;
+      padding:14px 16px;
+      background:#fff;
+    ">
+
+      <!-- Biz 헤더 -->
+      <div style="
+        font-size:11px;
+        font-weight:700;
+        color:#ed6c00;
+        margin-bottom:8px;
+      ">
+        {{ row['Biz'] }}
+      </div>
+
+      <!-- 핵심 금액 -->
+      <div style="
+        font-size:18px;
+        font-weight:800;
+        color:#111;
+        line-height:1.2;
+      ">
+        {{ row['재고금액_억원'] }}억
+      </div>
+
+      <!-- 보조 지표 -->
+      <div style="
+        display:flex;
+        gap:10px;
+        margin-top:6px;
+        font-size:11px;
+        color:#555;
+        font-weight:700;
+      ">
+        <span>{{ row['재고수량_만개'] }}만개</span>
+        <span style="color:#bbb;">·</span>
+        <span>{{ row['비율(%)'] }}%</span>
+      </div>
+
+      <!-- SKU -->
+      <div style="
+        margin-top:8px;
+        font-size:10px;
+        font-weight:700;
+        color:#c0392b;
+      ">
+        SKU {{ row['SKU_개'] }}개
+      </div>
+
+      <!-- CSC 요약 (0이 아닐 때만 표시) -->
+      <div style="
+        margin-top:8px;
+        font-size:10px;
+        color:#888;
+        font-weight:600;
+      ">
+        CSC 수량 {{ row['CSC수량_만개'] }}
+      </div>
+    </div>
+
+    {% endfor %}
+
+  </div>
+</div>
+
+
+<!-- 시즌 구분별 재고 현황 -->
+<div style="margin-bottom:24px;">
+  <div style="font-size:18px; font-weight:bold; color:#ed6c00;"> 시즌 구분별 재고 현황</div>
+  <!-- 🔽 이미지 박스 -->
+  <div style="margin-top:12px; padding:10px 12px; background:#fff;">
+    <img
+      src="data:image/png;base64,{{ season_plot_img  | safe}}"
+      alt="시즌 구분별 재고 현황 그래프""
+      style="max-width:100%; height:auto; display:block; padding:6px;">
+  </div>
+</div>
+
+<!-- 매장 / 창고 재고 비교 (전년 대비) -->
+<div style="margin-bottom:28px;">
+  <div style="
+    font-size:18px;
+    font-weight:800;
+    color:#ed6c00;
+    margin-bottom:12px;
+  ">
+    전년 대비 매장 / 창고 재고 비교
+  </div>
+
+  <div style="border:1px solid #e7e7e7; border-radius:8px; overflow:hidden;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="
+      border-collapse:collapse;
+      font-size:11px;
+      color:#111;
+    ">
+
+      <!-- 헤더 -->
+      <thead>
+        <tr style="background:#fafafa;">
+          <th style="padding:10px; text-align:left; font-weight:bold;">
+            구분
+          </th>
+          <th style="padding:10px; text-align:right; font-weight:bold;">
+            재고수량
+          </th>
+          <th style="padding:10px; text-align:right; font-weight:bold;">
+            전년 대비
+          </th>
+          <th style="padding:10px; text-align:right; font-weight:bold;">
+            재고금액
+          </th>
+          <th style="padding:10px; text-align:right; font-weight:bold;">
+            전년 대비
+          </th>
+          <th style="padding:10px; text-align:right; font-weight:bold;">
+            SKU
+          </th>
+        </tr>
+      </thead>
+
+      <!-- 바디 -->
+      <tbody>
+        {% for row in store_wh_compare %}
+        <tr style="border-top:1px solid #eee;">
+
+          <!-- 구분 -->
+          <td style="padding:10px; font-weight:bold; font-size:14px;">
+            {{ row['store_type'] }}
+          </td>
+
+          <!-- 재고수량 -->
+          <td style="padding:10px; text-align:right; font-weight:bold;">
+            {{ row['qty_current'] }}만개
+          </td>
+
+          <!-- 수량 전년 대비 -->
+          <td style="
+            padding:10px; text-align:right; font-weight:bold;
+            color: {{ '#d32f2f' if row['qty_rate'] > 0 else '#1976d2' }};
+          ">
+            {{ '+' if row['qty_rate'] > 0 else '' }}{{ row['qty_rate'] }}%
+          </td>
+
+          <!-- 재고금액 -->
+          <td style="padding:10px; text-align:right; font-weight:bold;">
+            {{ row['amt_current'] }}억원
+          </td>
+
+          <!-- 금액 전년 대비 -->
+          <td style="
+            padding:10px; text-align:right; font-weight:bold;
+            color: {{ '#d32f2f' if row['amt_rate'] > 0 else '#1976d2' }};
+          ">
+            {{ '+' if row['amt_rate'] > 0 else '' }}{{ row['amt_rate'] }}%
+          </td>
+
+          <!-- SKU -->
+          <td style="padding:10px; text-align:right; font-size:14px; color:#555;">
+            {{ row['sku_current'] }}개
+          </td>
+
+        </tr>
+        {% endfor %}
+      </tbody>
+
+    </table>
+
+
+  </div>
+</div>
+</div>
+
+</body>
+
+</html>
